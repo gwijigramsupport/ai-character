@@ -1,5 +1,8 @@
+import { Link } from 'react-router-dom'
+
 function CharacterCard({ character }) {
   return (
+    <Link to={`/character/${character.id}`}>
     <article className="character-card">
       <img
         src={character.image}
