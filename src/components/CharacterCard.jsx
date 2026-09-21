@@ -20,6 +20,7 @@ function CharacterCard({ character }) {
         </span>
       </div>
     </article>
+  </Link>
   )
 }
 
