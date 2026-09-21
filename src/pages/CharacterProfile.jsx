@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import characters from '../data/characters'
 
 function CharacterProfile() {
@@ -59,9 +59,12 @@ function CharacterProfile() {
         <p>{character.about}</p>
       </section>
 
-      <button className="chat-button">
-        💬 Chat with {character.name}
-      </button>
+      <Link
+  to={`/chat/${character.id}`}
+  className="chat-button"
+>
+  💬 Chat with {character.name}
+</Link>
     </div>
   </main>
  )
