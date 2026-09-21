@@ -13,34 +13,58 @@ function CharacterProfile() {
   }
 
   return (
-    <main>
+  <main className="profile-page">
+    <div className="profile-hero">
       <img
         src={character.image}
         alt={character.name}
+        className="profile-image"
       />
 
-      <h1>{character.name}</h1>
+      <div className="profile-overlay"></div>
 
-      <p>Age: {character.age}</p>
-      <p>⭐ {character.rating}</p>
-      <p>📍 {character.location}</p>
-      <p>💼 {character.occupation}</p>
+      <div className="profile-title">
+        <h1>{character.name}</h1>
 
-      <h2>Personality</h2>
-      <p>{character.personality}</p>
+        <span className="profile-age">
+          {character.age} yrs
+        </span>
+      </div>
+    </div>
 
-      <h2>Hobbies</h2>
-      <p>{character.hobbies}</p>
+    <div className="profile-content">
+      <div className="profile-meta">
+        <span>⭐ {character.rating}</span>
+        <span>📍 {character.location}</span>
+        <span>💼 {character.occupation}</span>
+      </div>
 
-      <h2>Dressing Style</h2>
-      <p>{character.dressingStyle}</p>
+      <section>
+        <h2>Personality</h2>
+        <p>{character.personality}</p>
+      </section>
 
-      <h2>About</h2>
-      <p>{character.about}</p>
+      <section>
+        <h2>Hobbies</h2>
+        <p>{character.hobbies}</p>
+      </section>
 
-      <button>💬 Chat</button>
-    </main>
-  )
+      <section>
+        <h2>Dressing Style</h2>
+        <p>{character.dressingStyle}</p>
+      </section>
+
+      <section>
+        <h2>About {character.name}</h2>
+        <p>{character.about}</p>
+      </section>
+
+      <button className="chat-button">
+        💬 Chat with {character.name}
+      </button>
+    </div>
+  </main>
+ )
 }
 
 export default CharacterProfile
