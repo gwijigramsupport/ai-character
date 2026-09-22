@@ -4,6 +4,7 @@ import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import CharacterProfile from './pages/CharacterProfile'
 import Chat from './pages/Chat'
+import Register from './pages/Register'
 
 import './App.css'
 
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/character/:id" element={<CharacterProfile />} />
         <Route path="/chat/:id" element={<Chat />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </BrowserRouter>
   )
