@@ -22,28 +22,55 @@ function Chat() {
     return <h1>Character not found</h1>
   }
 
-  function handleSend(event) {
-    event.preventDefault()
+  async function handleSend(event) {
+  event.preventDefault()
 
-    const trimmedMessage = message.trim()
+  const trimmedMessage = message.trim()
 
-    if (!trimmedMessage) {
-      return
-    }
+  if (!trimmedMessage) {
+    return
+  }
 
-    const newMessage = {
-      id: Date.now(),
-      sender: 'user',
-      text: trimmedMessage,
+  const newMessage = {
+    id: Date.now(),
+    sender: 'user',
+    text: trimmedMessage,
+  }
+
+  setMessages((currentMessages) => [
+    ...currentMessages,
+    newMessage,
+  ])
+
+  setMessage('')
+
+  try {
+    const response = await fetch('http://127.0.0.1:8000/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: trimmedMessage,
+      }),
+    })
+
+    const data = await response.json()
+
+    const aiMessage = {
+      id: Date.now() + 1,
+      sender: 'ai',
+      text: data.reply,
     }
 
     setMessages((currentMessages) => [
       ...currentMessages,
-      newMessage,
+      aiMessage,
     ])
-
-    setMessage('')
+  } catch (error) {
+    console.error('Chat error:', error)
   }
+}
 
   return (
     <main className="chat-page">
