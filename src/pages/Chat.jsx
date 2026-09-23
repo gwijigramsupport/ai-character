@@ -188,7 +188,14 @@ function Chat() {
     setMessage('')
 
     try {
-      // Send message to your AI backend
+      // Prepare previous conversation history
+      const history = messages.map((msg) => ({
+        sender: msg.sender,
+        content: msg.content,
+      }))
+
+      // Send character + history + new message
+      // to the AI backend
       const response = await fetch(
         'https://ai-character-zlso.onrender.com/chat',
         {
@@ -198,6 +205,19 @@ function Chat() {
           },
           body: JSON.stringify({
             message: trimmedMessage,
+
+            character: {
+              name: character.name,
+              age: character.age,
+              occupation: character.occupation,
+              location: character.location,
+              personality: character.personality,
+              hobbies: character.hobbies,
+              dressing_style: character.dressing_style,
+              about: character.about,
+            },
+
+            history: history,
           }),
         }
       )
