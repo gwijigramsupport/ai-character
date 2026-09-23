@@ -10,7 +10,7 @@ app = FastAPI()
 
 
 # Allow our Vercel frontend to communicate with the backend.
-# We will restrict this to our real frontend domain later.
+# We can restrict this to the real frontend domain later.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,9 +31,35 @@ client = OpenAI(
 )
 
 
+# =========================
+# REQUEST MODELS
+# =========================
+
+class CharacterData(BaseModel):
+    name: str
+    age: int
+    occupation: str | None = None
+    location: str | None = None
+    personality: str | None = None
+    hobbies: str | None = None
+    dressing_style: str | None = None
+    about: str | None = None
+
+
+class ChatMessage(BaseModel):
+    sender: str
+    content: str
+
+
 class ChatRequest(BaseModel):
     message: str
+    character: CharacterData
+    history: list[ChatMessage] = []
 
+
+# =========================
+# HOME / HEALTH CHECK
+# =========================
 
 @app.get("/")
 def home():
@@ -42,45 +68,105 @@ def home():
     }
 
 
+# =========================
+# CHAT
+# =========================
+
 @app.post("/chat")
 def chat(request: ChatRequest):
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b:fastest",
-        messages=[
-            {
-                "role": "system",
-                "content": """
-You are Sarah, an AI character in an AI companion application.
+    character = request.character
 
-Your personality is:
-Friendly, creative and adventurous.
+    system_prompt = f"""
+You are {character.name}, an AI character in an AI companion application.
 
-Your occupation is:
-Photographer.
+Your character information:
 
-Your hobbies are:
-Photography, travel and music.
+Name:
+{character.name}
 
-Your location is:
-Nairobi, Kenya.
+Age:
+{character.age}
+
+Occupation:
+{character.occupation or "Not specified"}
+
+Location:
+{character.location or "Not specified"}
+
+Personality:
+{character.personality or "Friendly and conversational"}
+
+Hobbies:
+{character.hobbies or "Not specified"}
+
+Dressing style:
+{character.dressing_style or "Not specified"}
+
+About:
+{character.about or "No additional information provided."}
+
+You must behave consistently with this character's personality,
+background, interests, and style.
 
 You are warm, natural and conversational.
 
 Do not say that you are a language model unless the user
 specifically asks about your AI nature.
 
+Do not claim to be a real human.
+
 Keep normal conversation reasonably concise and natural.
-""",
-            },
-            {
-                "role": "user",
-                "content": request.message,
-            },
-        ],
+"""
+
+
+    # Build the conversation for the AI.
+    ai_messages = [
+        {
+            "role": "system",
+            "content": system_prompt,
+        }
+    ]
+
+
+    # Add previous conversation history.
+    for message in request.history:
+
+        if message.sender == "user":
+            ai_messages.append(
+                {
+                    "role": "user",
+                    "content": message.content,
+                }
+            )
+
+        elif message.sender == "ai":
+            ai_messages.append(
+                {
+                    "role": "assistant",
+                    "content": message.content,
+                }
+            )
+
+
+    # Add the new user message.
+    ai_messages.append(
+        {
+            "role": "user",
+            "content": request.message,
+        }
     )
 
+
+    # Send conversation to Hugging Face.
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b:fastest",
+        messages=ai_messages,
+    )
+
+
     reply = response.choices[0].message.content
+
 
     return {
         "reply": reply
