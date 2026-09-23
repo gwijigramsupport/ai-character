@@ -9,8 +9,10 @@ from openai import OpenAI
 app = FastAPI()
 
 
-# Allow our Vercel frontend to communicate with the backend.
-# We can restrict this to the real frontend domain later.
+# =========================
+# CORS
+# =========================
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,11 +22,12 @@ app.add_middleware(
 )
 
 
-# Hugging Face token is stored in Render's environment variables.
+# =========================
+# HUGGING FACE
+# =========================
+
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-
-# Hugging Face provides an OpenAI-compatible API.
 client = OpenAI(
     base_url="https://router.huggingface.co/v1",
     api_key=HF_TOKEN,
@@ -55,6 +58,7 @@ class ChatRequest(BaseModel):
     message: str
     character: CharacterData
     history: list[ChatMessage] = []
+    memories: list[str] = []
 
 
 # =========================
@@ -76,6 +80,11 @@ def home():
 def chat(request: ChatRequest):
 
     character = request.character
+
+
+    # =========================
+    # CHARACTER PROMPT
+    # =========================
 
     system_prompt = f"""
 You are {character.name}, an AI character in an AI companion application.
@@ -120,7 +129,37 @@ Keep normal conversation reasonably concise and natural.
 """
 
 
-    # Build the conversation for the AI.
+    # =========================
+    # ADD LONG-TERM MEMORIES
+    # =========================
+
+    if request.memories:
+
+        memory_text = "\n".join(
+            f"- {memory}"
+            for memory in request.memories
+        )
+
+        system_prompt += f"""
+
+Long-term memories about the user:
+
+{memory_text}
+
+Use these memories naturally when they are relevant
+to the conversation.
+
+Do not mention the existence of a memory database unless
+the user specifically asks about how your memory works.
+
+Do not assume that every memory is relevant to every message.
+"""
+
+
+    # =========================
+    # BUILD AI CONVERSATION
+    # =========================
+
     ai_messages = [
         {
             "role": "system",
@@ -129,10 +168,14 @@ Keep normal conversation reasonably concise and natural.
     ]
 
 
-    # Add previous conversation history.
+    # =========================
+    # PREVIOUS CHAT HISTORY
+    # =========================
+
     for message in request.history:
 
         if message.sender == "user":
+
             ai_messages.append(
                 {
                     "role": "user",
@@ -141,6 +184,7 @@ Keep normal conversation reasonably concise and natural.
             )
 
         elif message.sender == "ai":
+
             ai_messages.append(
                 {
                     "role": "assistant",
@@ -149,7 +193,10 @@ Keep normal conversation reasonably concise and natural.
             )
 
 
-    # Add the new user message.
+    # =========================
+    # CURRENT USER MESSAGE
+    # =========================
+
     ai_messages.append(
         {
             "role": "user",
@@ -158,7 +205,10 @@ Keep normal conversation reasonably concise and natural.
     )
 
 
-    # Send conversation to Hugging Face.
+    # =========================
+    # SEND TO HUGGING FACE
+    # =========================
+
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b:fastest",
         messages=ai_messages,
@@ -167,6 +217,10 @@ Keep normal conversation reasonably concise and natural.
 
     reply = response.choices[0].message.content
 
+
+    # =========================
+    # RETURN RESPONSE
+    # =========================
 
     return {
         "reply": reply
