@@ -8,6 +8,7 @@ function Chat() {
   const [character, setCharacter] = useState(null)
   const [conversation, setConversation] = useState(null)
   const [messages, setMessages] = useState([])
+  const [memories, setMemories] = useState([])
 
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -19,7 +20,10 @@ function Chat() {
       setLoading(true)
       setError('')
 
-      // Get the logged-in user
+      // =========================
+      // GET LOGGED-IN USER
+      // =========================
+
       const {
         data: { user },
         error: userError,
@@ -31,13 +35,18 @@ function Chat() {
         return
       }
 
-      // Get character from Supabase
-      const { data: characterData, error: characterError } =
-        await supabase
-          .from('characters')
-          .select('*')
-          .eq('id', id)
-          .single()
+      // =========================
+      // GET CHARACTER
+      // =========================
+
+      const {
+        data: characterData,
+        error: characterError,
+      } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('id', id)
+        .single()
 
       if (characterError) {
         console.error(
@@ -52,7 +61,39 @@ function Chat() {
 
       setCharacter(characterData)
 
-      // Find existing conversation
+      // =========================
+      // LOAD LONG-TERM MEMORIES
+      // =========================
+
+      const {
+        data: memoryData,
+        error: memoryError,
+      } = await supabase
+        .from('memories')
+        .select('id, content')
+        .eq('user_id', user.id)
+        .eq('character_id', id)
+        .order('created_at', {
+          ascending: true,
+        })
+
+      if (memoryError) {
+        console.error(
+          'Memory error:',
+          memoryError
+        )
+
+        // Memory is optional for now.
+        // Do not stop the chat if memories fail.
+        setMemories([])
+      } else {
+        setMemories(memoryData || [])
+      }
+
+      // =========================
+      // FIND EXISTING CONVERSATION
+      // =========================
+
       const {
         data: existingConversation,
         error: conversationError,
@@ -76,7 +117,10 @@ function Chat() {
 
       let currentConversation = existingConversation
 
-      // Create conversation if one doesn't exist
+      // =========================
+      // CREATE CONVERSATION
+      // =========================
+
       if (!currentConversation) {
         const {
           data: newConversation,
@@ -109,7 +153,10 @@ function Chat() {
 
       setConversation(currentConversation)
 
-      // Load previous messages
+      // =========================
+      // LOAD PREVIOUS MESSAGES
+      // =========================
+
       const {
         data: messageData,
         error: messageError,
@@ -143,19 +190,30 @@ function Chat() {
     loadChat()
   }, [id])
 
+  // =========================
+  // SEND MESSAGE
+  // =========================
+
   async function handleSend(event) {
     event.preventDefault()
 
     const trimmedMessage = message.trim()
 
-    if (!trimmedMessage || sending || !conversation) {
+    if (
+      !trimmedMessage ||
+      sending ||
+      !conversation
+    ) {
       return
     }
 
     setSending(true)
     setError('')
 
-    // Save user message to Supabase
+    // =========================
+    // SAVE USER MESSAGE
+    // =========================
+
     const {
       data: savedUserMessage,
       error: userMessageError,
@@ -188,21 +246,36 @@ function Chat() {
     setMessage('')
 
     try {
-      // Prepare previous conversation history
+      // =========================
+      // PREVIOUS CHAT HISTORY
+      // =========================
+
       const history = messages.map((msg) => ({
         sender: msg.sender,
         content: msg.content,
       }))
 
-      // Send character + history + new message
-      // to the AI backend
+      // =========================
+      // PREPARE MEMORIES
+      // =========================
+
+      const memoryList = memories.map(
+        (memory) => memory.content
+      )
+
+      // =========================
+      // SEND TO AI BACKEND
+      // =========================
+
       const response = await fetch(
         'https://ai-character-zlso.onrender.com/chat',
         {
           method: 'POST',
+
           headers: {
             'Content-Type': 'application/json',
           },
+
           body: JSON.stringify({
             message: trimmedMessage,
 
@@ -213,11 +286,14 @@ function Chat() {
               location: character.location,
               personality: character.personality,
               hobbies: character.hobbies,
-              dressing_style: character.dressing_style,
+              dressing_style:
+                character.dressing_style,
               about: character.about,
             },
 
             history: history,
+
+            memories: memoryList,
           }),
         }
       )
@@ -230,7 +306,10 @@ function Chat() {
 
       const data = await response.json()
 
-      // Save AI response to Supabase
+      // =========================
+      // SAVE AI RESPONSE
+      // =========================
+
       const {
         data: savedAIMessage,
         error: aiMessageError,
@@ -263,7 +342,10 @@ function Chat() {
         savedAIMessage,
       ])
     } catch (error) {
-      console.error('Chat error:', error)
+      console.error(
+        'Chat error:',
+        error
+      )
 
       setError(
         'Something went wrong while contacting the AI.'
@@ -272,6 +354,10 @@ function Chat() {
 
     setSending(false)
   }
+
+  // =========================
+  // LOADING
+  // =========================
 
   if (loading) {
     return (
@@ -283,6 +369,10 @@ function Chat() {
     )
   }
 
+  // =========================
+  // ERROR WITHOUT CHARACTER
+  // =========================
+
   if (error && !character) {
     return (
       <main className="chat-page">
@@ -292,6 +382,10 @@ function Chat() {
       </main>
     )
   }
+
+  // =========================
+  // CHARACTER NOT FOUND
+  // =========================
 
   if (!character) {
     return (
@@ -303,10 +397,15 @@ function Chat() {
     )
   }
 
+  // =========================
+  // CHAT UI
+  // =========================
+
   return (
     <main className="chat-page">
 
       <header className="chat-header">
+
         <img
           src={character.image}
           alt={character.name}
@@ -317,6 +416,7 @@ function Chat() {
           <h1>{character.name}</h1>
           <span>Online</span>
         </div>
+
       </header>
 
       <div className="chat-messages">
@@ -359,6 +459,7 @@ function Chat() {
         className="chat-input-area"
         onSubmit={handleSend}
       >
+
         <input
           type="text"
           placeholder={`Message ${character.name}...`}
@@ -375,6 +476,7 @@ function Chat() {
         >
           {sending ? '...' : '➤'}
         </button>
+
       </form>
 
     </main>
