@@ -14,6 +14,7 @@ function Chat() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [memoryNotice, setMemoryNotice] = useState('')
 
   useEffect(() => {
     async function loadChat() {
@@ -83,8 +84,6 @@ function Chat() {
           memoryError
         )
 
-        // Memory is optional for now.
-        // Do not stop the chat if memories fail.
         setMemories([])
       } else {
         setMemories(memoryData || [])
@@ -191,6 +190,84 @@ function Chat() {
   }, [id])
 
   // =========================
+  // SAVE EXPLICIT MEMORY
+  // =========================
+
+  async function saveMemory(userMessage) {
+    const rememberPrefixes = [
+      'remember that ',
+      'remember ',
+    ]
+
+    const lowerMessage = userMessage.toLowerCase()
+
+    const matchedPrefix = rememberPrefixes.find(
+      (prefix) => lowerMessage.startsWith(prefix)
+    )
+
+    if (!matchedPrefix) {
+      return
+    }
+
+    const memoryContent = userMessage
+      .slice(matchedPrefix.length)
+      .trim()
+
+    if (!memoryContent) {
+      return
+    }
+
+    // Get current logged-in user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error(
+        'Memory user error:',
+        userError
+      )
+      return
+    }
+
+    // Save memory automatically
+    const {
+      data: savedMemory,
+      error: memoryError,
+    } = await supabase
+      .from('memories')
+      .insert({
+        user_id: user.id,
+        character_id: id,
+        content: memoryContent,
+      })
+      .select('id, content')
+      .single()
+
+    if (memoryError) {
+      console.error(
+        'Save memory error:',
+        memoryError
+      )
+
+      return
+    }
+
+    // Add the new memory immediately to local state
+    setMemories((currentMemories) => [
+      ...currentMemories,
+      savedMemory,
+    ])
+
+    setMemoryNotice('🧠 Memory saved!')
+
+    setTimeout(() => {
+      setMemoryNotice('')
+    }, 2500)
+  }
+
+  // =========================
   // SEND MESSAGE
   // =========================
 
@@ -209,6 +286,7 @@ function Chat() {
 
     setSending(true)
     setError('')
+    setMemoryNotice('')
 
     // =========================
     // SAVE USER MESSAGE
@@ -244,6 +322,12 @@ function Chat() {
     ])
 
     setMessage('')
+
+    // =========================
+    // CHECK FOR MEMORY COMMAND
+    // =========================
+
+    await saveMemory(trimmedMessage)
 
     try {
       // =========================
@@ -448,6 +532,12 @@ function Chat() {
         )}
 
       </div>
+
+      {memoryNotice && (
+        <p className="auth-success">
+          {memoryNotice}
+        </p>
+      )}
 
       {error && (
         <p className="auth-error">
