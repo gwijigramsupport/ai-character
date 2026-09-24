@@ -6,7 +6,8 @@ animatediff_image = (
     Image.debian_slim()
     .pip_install(
         "torch", "transformers", "diffusers", "accelerate", 
-        "safetensors", "requests", "peft", "supabase"
+        "safetensors", "requests", "peft", "supabase",
+        "fastapi[standard]"
     )
 )
 
