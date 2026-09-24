@@ -15,7 +15,7 @@ app = App("animatediff_app", image=animatediff_image)
 volume = Volume.from_name("model-cache", create_if_missing=True)
 MODEL_DIR = "/data/models"
 
-@app.function(gpu="A10G", volumes={MODEL_DIR: volume}, timeout=600)
+@app.function(gpu="T4", volumes={MODEL_DIR: volume}, timeout=600)
 def generate_video_pipeline(prompt: str, negative_prompt: str, steps: int, frames: int, sb_url: str, sb_key: str) -> str:
     import torch
     from diffusers import AnimateDiffPipeline, DDIMScheduler, MotionAdapter
