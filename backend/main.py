@@ -32,7 +32,7 @@ VIDEO_JOBS_DB = {}
 ALLOWED_ORIGINS = [
     "http://localhost:5173",             # Local Vite React client port
     "http://localhost:3000",             # Alternative local port
-    "https://ai-character-livid.vercel.app"   # Replace with your live Vercel domain later
+    "https://vercel.app"   # Replace with your live Vercel domain later
 ]
 
 app.add_middleware(
