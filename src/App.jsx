@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import CharacterProfile from './pages/CharacterProfile'
+import Memories from './pages/Memories'
 import Chat from './pages/Chat'
 import Register from './pages/Register'
 import Login from './pages/Login'
@@ -17,6 +18,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/character/:id" element={<CharacterProfile />} />
+        <Route
+  path="/character/:id/memories"
+  element={<Memories />}
+/>
         <Route path="/chat/:id" element={<Chat />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
